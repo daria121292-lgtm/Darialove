@@ -1,0 +1,26 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title>Скачать UX-материалы</title><style>*{box-sizing:border-box}body{margin:0;background:#f2f5f7;color:#283035;font:16px/1.6 Arial,sans-serif}main{max-width:660px;margin:8vh auto;padding:30px}section{background:white;padding:30px;border-radius:18px}h1{font-size:27px;line-height:1.25;margin:0 0 16px}p{color:#687984;margin:10px 0 20px}button{font:inherit;cursor:pointer;border:0;border-radius:11px;background:#008900;color:white;padding:12px 18px;margin:0 8px 12px 0}button.secondary{color:#008900;background:#eaf0f3}button:disabled{opacity:.5;cursor:wait}button:focus-visible{outline:3px solid #8abfe5;outline-offset:3px}.note{font-size:13px;margin-top:24px}.status{font-size:14px;padding:13px;border-radius:9px;background:#f0f6f0;margin:15px 0;overflow-wrap:anywhere}.error{background:#fff0f2;color:#a62940}small{color:#73838d}a{color:#008900}@media(max-width:550px){main{margin:24px auto;padding:16px}section{padding:24px}button{display:block;width:100%}}</style></head><body><main><section><h1>Материалы UX-задач</h1><p>Памятка по заказам и рейсам, вопросы для исследования и интерактивные макеты.</p><button data-kind="zip">Скачать всё · ZIP</button><div><button data-kind="pdf" class="secondary">Памятка · PDF</button><button data-kind="docx" class="secondary">Памятка · Word</button></div><div id="status" class="status" role="status" aria-live="polite">Выберите файл для скачивания.</div><p class="note">Распакуйте архив целиком и откройте <strong>START_HERE.html</strong>. В нём ссылки на документы, семь типов заказа и варианты рейсов.</p><small>15 октября 2026 · Содержимое расшифровывается в вашем браузере по полной ссылке из чата.</small></section></main><script>
+'use strict';
+const status=document.getElementById('status');
+const names={zip:'UX_Sber_all_materials_2026-10-15.zip',pdf:'UX_Sber_context_2026-10-15.pdf',docx:'UX_Sber_context_2026-10-15.docx'};
+const types={zip:'application/zip',pdf:'application/pdf',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'};
+let busy=false;
+async function download(kind){
+ if(busy||!names[kind])return;
+ const token=new URLSearchParams(location.hash.slice(1)).get('key');
+ if(!token){status.textContent='Для скачивания откройте полную ссылку на материалы из чата.';status.className='status error';return;}
+ busy=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);status.className='status';status.textContent='Подготавливаем '+kind.toUpperCase()+'…';
+ try{
+  const base=token.replace(/-/g,'+').replace(/_/g,'/');const raw=Uint8Array.from(atob(base+'='.repeat((4-base.length%4)%4)),c=>c.charCodeAt(0));
+  if(raw.length!==32)throw new Error('invalid-key');
+  const key=await crypto.subtle.importKey('raw',raw,'AES-GCM',false,['decrypt']);
+  const response=await fetch(kind+'.bin',{cache:'no-store',referrerPolicy:'no-referrer'});if(!response.ok)throw new Error('fetch');
+  const packed=new Uint8Array(await response.arrayBuffer());if(new TextDecoder().decode(packed.slice(0,5))!=='UXPK1')throw new Error('format');
+  const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:packed.slice(5,17),additionalData:new TextEncoder().encode('ux-materials-v1:'+kind)},key,packed.slice(17));
+  const object=URL.createObjectURL(new Blob([plain],{type:types[kind]}));const a=document.createElement('a');a.href=object;a.download=names[kind];document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(object),60000);
+  status.textContent='Файл '+names[kind]+' передан в загрузки браузера. При необходимости нажмите кнопку ещё раз.';
+ }catch(e){status.className='status error';status.textContent='Не удалось подготовить файл. Откройте полную ссылку из чата и повторите скачивание.';}
+ finally{busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);}
+}
+document.querySelectorAll('[data-kind]').forEach(b=>b.addEventListener('click',()=>download(b.dataset.kind)));
+const auto=new URLSearchParams(location.search).get('download');if(names[auto])download(auto);
+</script></body></html>
