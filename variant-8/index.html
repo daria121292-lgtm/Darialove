@@ -351,7 +351,8 @@ document.addEventListener('click',async e=>{
 });
 $('modal').addEventListener('cancel',()=>{modalKind='';pasteResult=null;serviceDraft=null;});
 function init(){
- if(!params.has('example')){try{const saved=JSON.parse(localStorage.getItem(STORAGE));if(saved?.version===1&&saved.state&&Object.keys(saved.state.members).every(id=>BYID.has(id))){state=saved.state;pointMode=saved.pointMode==='responsible'?'responsible':'directory';editingSnapshot=saved.editingSnapshot||null;example=state.status==='accepted'?'accepted':state.status==='requested'?'requested':'start';render();notify('Восстановлен сохранённый пример из этого браузера.');return;}}catch{}}
+ const reloading=performance.getEntriesByType('navigation')[0]?.type==='reload';
+ if(!params.has('example')||reloading){try{const saved=JSON.parse(localStorage.getItem(STORAGE));if(saved?.version===1&&saved.state&&Object.keys(saved.state.members).every(id=>BYID.has(id))){state=saved.state;pointMode=saved.pointMode==='responsible'?'responsible':'directory';editingSnapshot=saved.editingSnapshot||null;example=state.status==='accepted'?'accepted':state.status==='requested'?'requested':'start';render();notify('Восстановлен сохранённый пример из этого браузера.');return;}}catch{}}
  reset(['start','blank','distributed','large','requested','accepted'].includes(example)?example:'start');
 }
 init();
