@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<title>Документ для интервью — открыть и скачать</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2f5f7;color:#283035;font:16px/1.6 Arial,sans-serif}main{max-width:1000px;margin:32px auto;padding:0 20px 48px}.tools,.paper{background:#fff;padding:30px;border-radius:18px;margin-bottom:20px}h1{font-size:28px;line-height:1.25;margin:0 0 14px}h2{font-size:23px;line-height:1.3;margin:0 0 15px}h3{font-size:18px;line-height:1.4;margin:26px 0 12px}p{margin:0 0 18px}.hint{color:#64727c;font-size:14px}.buttons{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}button,.link-button{font:inherit;cursor:pointer;border:0;border-radius:10px;background:#008900;color:#fff;padding:11px 17px;text-decoration:none;display:inline-block}button.secondary,.link-button.secondary{color:#006d00;background:#eaf0f3}button:disabled{opacity:.55;cursor:wait}button:focus-visible,a:focus-visible{outline:3px solid #77b2df;outline-offset:3px}.status{padding:12px 15px;border-radius:9px;background:#eff6ef;margin:15px 0 0;overflow-wrap:anywhere;font-size:14px}.status.error{background:#fff0f2;color:#a62940}.paper{padding:40px 48px}.section{margin-top:36px;border-top:1px solid #dce3e8;padding-top:26px}.question{margin:0 0 25px;break-inside:avoid}.prompt{margin:0;font-weight:500}.number{font-weight:bold}.notes{margin:7px 0 0}.note-line{height:26px;border-bottom:1px solid #d5dce2}.intro{margin:20px 0 28px}.pdfbox{height:75vh;width:100%;border:1px solid #dce3e8;border-radius:8px}.pdf-title{margin-top:0}[hidden]{display:none!important}.print-meta{margin:0 0 25px;font-size:14px}.title-block{break-inside:avoid}a{color:#006d00}#copy-fallback{width:100%;min-height:200px;font:14px/1.5 monospace}.noscript{background:#fff0f2;padding:20px;border-radius:8px}@media(max-width:600px){main{margin:16px auto;padding:0 12px 32px}.tools,.paper{padding:24px 20px;border-radius:13px}h1{font-size:24px}h2{font-size:21px}.buttons{display:grid;grid-template-columns:1fr 1fr}button,.link-button{font-size:14px;padding:12px 10px;text-align:center}}@media print{@page{size:A4;margin:16mm}body{background:#fff;color:#000;font-size:11pt;line-height:1.35}main{max-width:none;margin:0;padding:0}.tools,#pdf-panel,#copy-panel{display:none!important}.paper{padding:0;margin:0;border-radius:0}.section{margin-top:20px;padding-top:15px}h1{font-size:20pt}h2{font-size:16pt;break-after:avoid}h3{font-size:12pt;break-after:avoid}.question{margin-bottom:16px}.note-line{height:7mm;border-bottom:1px solid #bbb}.section>p{break-after:avoid}.intro{margin:14px 0 20px}}
+</style>
+</head>
+<body><main>
+<section class="tools" aria-labelledby="page-title">
+<h1 id="page-title">Документ для интервью</h1>
+<p>Вопросы доступны прямо на странице. Также можно сохранить Word или PDF.</p>
+<div class="buttons">
+<button data-download="docx">Скачать Word</button>
+<button data-download="pdf">Скачать PDF</button>
+<button id="show-pdf" class="secondary">Открыть PDF</button>
+<button id="copy" class="secondary" disabled>Копировать весь текст</button>
+<button id="print" class="secondary" disabled>Распечатать / сохранить PDF</button>
+</div>
+<p class="hint">Если скачивание во встроенном окне не работает, откройте эту же ссылку в Chrome или Edge через меню приложения. Текст ниже можно читать и копировать без скачивания.</p>
+<div id="status" class="status" role="status" aria-live="polite">Открываем документ…</div>
+<noscript><p class="noscript">Для открытия документа нужен JavaScript. Откройте полную ссылку из чата в обычном браузере.</p></noscript>
+</section>
+<section id="pdf-panel" class="paper" hidden aria-label="Просмотр PDF">
+<h2 class="pdf-title">Просмотр PDF</h2>
+<p><a id="pdf-tab" target="_blank" rel="noopener noreferrer">Открыть PDF в отдельной вкладке</a></p>
+<p class="hint">Если PDF не отображается, все вопросы доступны ниже.</p>
+<iframe id="pdf-frame" class="pdfbox" title="Документ PDF"></iframe>
+</section>
+<section id="copy-panel" class="paper" hidden aria-label="Текст для копирования"><p>Автоматическое копирование недоступно. Выделите и скопируйте текст из этого поля.</p><textarea id="copy-fallback" readonly aria-label="Весь текст документа"></textarea></section>
+<article id="document" class="paper" hidden></article>
+</main>
+<script>
+'use strict';
+const statusEl=document.getElementById('status');
+const names={pdf:'Interview_Sber_2026-10-22.pdf',docx:'Interview_Sber_2026-10-22.docx'};
+const types={pdf:'application/pdf',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',json:'application/json'};
+const cache=new Map();let plainText='';let ready=false;let pdfURL='';let keyPromise;
+function status(message,error=false){statusEl.textContent=message;statusEl.className='status'+(error?' error':'');}
+function importKey(){
+ if(keyPromise)return keyPromise;
+ keyPromise=(async()=>{
+  const token=new URLSearchParams(location.hash.slice(1)).get('key');
+  if(!token)throw new Error('missing-key');
+  if(!crypto.subtle)throw new Error('crypto');
+  const b=token.replace(/-/g,'+').replace(/_/g,'/');
+  const raw=Uint8Array.from(atob(b+'='.repeat((4-b.length%4)%4)),c=>c.charCodeAt(0));
+  if(raw.length!==32)throw new Error('invalid-key');
+  return crypto.subtle.importKey('raw',raw,'AES-GCM',false,['decrypt']);
+ })();return keyPromise;
+}
+async function unpack(kind){
+ if(cache.has(kind))return cache.get(kind);
+ const pending=(async()=>{
+  const key=await importKey();
+  const r=await fetch(kind+'.bin',{cache:'no-store',referrerPolicy:'no-referrer'});
+  if(!r.ok)throw new Error('fetch');
+  const bytes=new Uint8Array(await r.arrayBuffer());
+  if(new TextDecoder().decode(bytes.slice(0,5))!=='UXPK1')throw new Error('format');
+  return crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(5,17),additionalData:new TextEncoder().encode('ux-materials-v1:'+kind)},key,bytes.slice(17));
+ })();cache.set(kind,pending);
+ try{return await pending;}catch(e){cache.delete(kind);throw e;}
+}
+function failure(e){status(e.message==='missing-key'?'Откройте полную ссылку из чата: в ней есть доступ к документу.':'Не удалось открыть документ. Проверьте, что ссылка скопирована целиком, и попробуйте открыть её в Chrome или Edge.',true);}
+function el(tag,text,cls){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node;}
+function render(data){
+ const root=document.getElementById('document');root.replaceChildren();
+ root.append(el('h1',data.title),el('p','Дата: __________________    Участник: __________________','print-meta'),el('p',data.intro,'intro'));
+ const copy=[data.title,'',data.intro,''];let n=0;
+ for(const section of data.sections){
+  const block=el('section',undefined,'section');block.append(el('h2',section.title));copy.push(section.title,'');
+  for(const k of ['description','alternative'])if(section[k]){block.append(el('p',section[k]));copy.push(section[k],'');}
+  for(const group of section.groups){
+   if(group.title){block.append(el('h3',group.title));copy.push(group.title,'');}
+   for(const text of group.questions){
+    n++;const question=el('div',undefined,'question');
+    const prompt=el('p',undefined,'prompt');prompt.append(el('span',n+'. ','number'),document.createTextNode(text));
+    const notes=el('div',undefined,'notes');notes.setAttribute('aria-hidden','true');
+    for(let i=0;i<3;i++)notes.append(el('div',undefined,'note-line'));
+    question.append(prompt,notes);block.append(question);
+    copy.push(n+'. '+text,'','____________________________________________________________','____________________________________________________________','____________________________________________________________','');
+   }
+  }
+  root.append(block);
+ }
+ plainText=copy.join('\n');root.hidden=false;ready=true;
+ document.getElementById('copy').disabled=false;document.getElementById('print').disabled=false;
+ status('Документ открыт · '+n+' вопросов · после каждого — 3 строки для заметок.');
+}
+async function download(kind,button){
+ button.disabled=true;status('Готовим '+(kind==='docx'?'Word':'PDF')+'…');
+ try{
+  const bytes=await unpack(kind);const url=URL.createObjectURL(new Blob([bytes],{type:types[kind]}));
+  const a=el('a');a.href=url;a.download=names[kind];document.body.append(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+  status('Файл передан в загрузки браузера. Если сохранение не началось, откройте эту ссылку в Chrome или Edge либо воспользуйтесь текстом ниже.');
+ }catch(e){failure(e);}finally{button.disabled=false;}
+}
+document.querySelectorAll('[data-download]').forEach(b=>b.addEventListener('click',()=>download(b.dataset.download,b)));
+document.getElementById('show-pdf').addEventListener('click',async event=>{
+ const b=event.currentTarget;b.disabled=true;status('Открываем PDF…');
+ try{
+  if(!pdfURL)pdfURL=URL.createObjectURL(new Blob([await unpack('pdf')],{type:types.pdf}));
+  document.getElementById('pdf-frame').src=pdfURL;document.getElementById('pdf-tab').href=pdfURL;
+  const panel=document.getElementById('pdf-panel');panel.hidden=false;panel.scrollIntoView({behavior:'smooth',block:'start'});
+  status('PDF открыт ниже. Если просмотр недоступен, читайте текст документа на этой странице.');
+ }catch(e){failure(e);}finally{b.disabled=false;}
+});
+document.getElementById('copy').addEventListener('click',async()=>{
+ if(!ready)return;
+ try{
+  await navigator.clipboard.writeText(plainText);status('Весь текст скопирован. Его можно вставить в Word или другой документ.');
+ }catch(e){
+  document.getElementById('copy-panel').hidden=false;const area=document.getElementById('copy-fallback');area.value=plainText;area.focus();area.select();
+  let copied=false;try{copied=document.execCommand('copy');}catch(e){}
+  status(copied?'Текст скопирован.':'Выделите текст в открывшемся поле и скопируйте его вручную.');
+ }
+});
+document.getElementById('print').addEventListener('click',()=>{if(ready)window.print();});
+(async()=>{try{render(JSON.parse(new TextDecoder().decode(await unpack('json'))));}catch(e){failure(e);}})();
+</script></body></html>
